@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dungeon Cards ต้นแบบ</title>
+<style>
+:root{--bg:#e6e9ee;--pn:#fff;--tx:#1b1f27;--mu:#5d6675;--ln:#bcc3cf;--hx:#d3d9e2;--hl:#f2c94c;--red:#d6453d;--blu:#3b78dd;--ac:#2a8f86;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12151b;--pn:#1d222b;--tx:#e8ebf1;--mu:#98a2b3;--ln:#323a47;--hx:#252c38;--hl:#b8902a;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#12151b;--pn:#1d222b;--tx:#e8ebf1;--mu:#98a2b3;--ln:#323a47;--hx:#252c38;--hl:#b8902a;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,"Noto Sans Thai",sans-serif}
+#app{max-width:1000px;margin:auto;padding:10px}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+button{font:inherit;color:var(--tx);background:var(--pn);border:1px solid var(--ln);border-radius:6px;padding:6px 12px;cursor:pointer}
+button.on{background:var(--ac);color:#fff;border-color:var(--ac)}button:disabled{opacity:.4}
+.bd{display:flex;flex-wrap:wrap;gap:10px}#map{flex:1 1 380px;min-width:300px;max-width:100%;background:var(--pn);border-radius:8px}
+#sd{flex:1 1 240px;display:grid;gap:8px;align-content:start}
+.box{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px}.box.me{border-color:var(--ac);border-width:2px}
+.hx{fill:var(--hx);stroke:var(--ln)}.hx.hl{fill:var(--hl);cursor:pointer}
+#hand{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+.cd{flex:0 0 150px;text-align:left;display:grid;gap:3px;align-content:start;border-width:2px}.cd.sel{outline:3px solid var(--ac)}
+.cd small{color:var(--mu)}.r{color:var(--red);font-weight:700}.b{color:var(--blu);font-weight:700}.w{color:#c27a00}
+#dice{min-height:44px;display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin-bottom:8px;color:var(--mu)}
+.die{display:inline-grid;place-items:center;width:34px;height:34px;margin:0 3px;border-radius:7px;color:#fff;font-weight:700;font-size:18px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}
+.die.rolling{animation:tb .14s linear infinite}.die.crit{outline:3px solid var(--hl)}@keyframes tb{to{transform:rotate(90deg)}}
+@media(prefers-reduced-motion:reduce){.die.rolling{animation:none}}
+#lg{background:var(--pn);border-radius:8px;padding:8px;margin:0;white-space:pre-wrap;font:12px/1.5 system-ui,"Noto Sans Thai",sans-serif;max-height:150px;overflow:auto}
+#app{max-width:1280px}#sd{display:none}
+#top{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:10px;margin-bottom:10px}
+#map{width:100%;height:min(60vh,560px)}
+#rt{display:grid;grid-template-rows:auto auto 1fr;gap:10px;min-height:0}
+#rt>*{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px;margin:0}
+#bot{display:grid;grid-template-columns:340px minmax(0,1fr) 280px;gap:10px}
+#pp,#bp{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px;font-size:12px;line-height:1.5}
+.bnr{background:var(--hl);color:#000;border-radius:8px;padding:8px;margin-bottom:10px}
+.ov{pointer-events:none}.art{width:100%;height:64px;object-fit:cover;border-radius:4px}
+.av{width:52px;height:52px;border-radius:50%;object-fit:cover;background:var(--hx);display:grid;place-items:center;flex:none}
+.tier{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}.tier div{border:1px dashed var(--ln);border-radius:6px;min-height:42px;padding:3px;font-size:11px}
+.sl{display:inline-block;border:1px dashed var(--ln);border-radius:6px;padding:4px 6px;margin:2px;font-size:11px;min-width:58px;text-align:center}
+.fx{animation:pop 1.2s ease-out forwards}@keyframes pop{0%{transform:scale(.3);opacity:0}20%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:0}}
+#im{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);place-items:center;padding:16px;z-index:9}
+#im>div{background:var(--pn);border-radius:10px;padding:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto}
+@media(max-width:900px){#top,#bot{grid-template-columns:1fr}}
+</style></head><body><div id="app">
+<header id="hd"></header>
+
+<div id="top"><svg id="map" viewBox="-215 -195 430 390"></svg><div id="rt"><div id="dice"><small>ลูกเต๋าจะแสดงตรงนี้เมื่อมีการทอย</small></div><div id="last"></div><pre id="lg"></pre></div></div>
+<aside id="sd"></aside><div id="bn"></div>
+<div id="bot"><div id="pp"></div><section id="hand"></section><div id="bp"></div></div><div id="im"></div>
+</div>
+<script>
+/* =====================================================================
+   1) ข้อมูลการ์ด  (แก้/เพิ่มการ์ดที่ส่วนนี้ส่วนเดียว)
+   ---------------------------------------------------------------------
+   แต่ละใบคือ 1 บรรทัด ช่องต่างๆ:
+   n  = ชื่อการ์ด          t  = 'A' (Action) หรือ 'R' (Reaction)
+   cd = ค่า Cooldown 1-3   c  = สีลูกเต๋า 'red' | 'blue' (| 'green' เก็บไว้ใช้ทีหลัง)
+   d  = จำนวนลูกเต๋า D6    r  = ระยะ (ช่อง hex)   x = จำนวนใบในกอง (ไม่ใส่ = 1)
+   h  = ค่าคงที่ (ฮีล / จั่ว)   tx = ข้อความอธิบาย
+   w  = 1 ถ้า "ผลพิเศษยังไม่ทำงาน" (ระบบทำเฉพาะส่วนพื้นฐาน)
+   fx = ผลที่ระบบทำงานจริง:
+     'hit'   ตีศัตรู 1 ตัวในระยะ r        'adj'  ตีศัตรูทุกตัวในระยะ r รอบตัว
+     'area'  เลือกช่อง ตีทุกตัวในรัศมี 1  'heal' ฮีลตัวเอง h
+     'draw'  จั่วการ์ด h ใบ               'blink' วาร์ปไปช่องว่างในระยะ r
+     'block' (Reaction) ตอนโดนตี ทอยลดดาเมจ   'none' ไม่มีผล (ยังไม่ทำ)
+   ตัวอย่างเพิ่มการ์ด: {n:'Arrow',t:'A',cd:1,c:'green',d:1,r:5,fx:'hit',tx:'ยิงระยะไกล'},
+   ===================================================================== */
+const CARDS={
+ Knight:[
+  {n:'Slash',t:'A',cd:1,c:'red',d:1,r:1,fx:'hit',x:2,tx:'ตีศัตรูติดกัน'},
+  {n:'Heavy Strike',t:'A',cd:2,c:'red',d:2,r:1,fx:'hit',tx:'ตีศัตรูติดกัน'},
+  {n:'Bash',t:'A',cd:2,c:'red',d:1,r:1,fx:'hit',w:1,tx:'ตีติดกัน + ผลัก 1 ช่อง'},
+  {n:'Charge',t:'A',cd:2,c:'red',d:1,r:3,fx:'hit',w:1,tx:'พุ่ง 3 ช่องแล้วตี (ตอนนี้ตีระยะ 3 เฉยๆ)'},
+  {n:'Whirlwind',t:'A',cd:3,c:'red',d:2,r:1,fx:'adj',tx:'ตีทุกศัตรูที่ติดกัน'},
+  {n:'Finishing Blow',t:'A',cd:3,c:'red',d:3,r:1,fx:'hit',w:1,tx:'ตีติดกัน (+2 ถ้าเป้าหมาย HP ≤ ครึ่ง)'},
+  {n:'Taunt',t:'A',cd:2,fx:'none',w:1,tx:'ศัตรูในระยะ 4 ต้องโจมตีคุณ'},
+  {n:'Second Wind',t:'A',cd:3,fx:'heal',h:5,tx:'ฮีลตัวเอง 5 HP'},
+  {n:'Guard',t:'R',cd:1,c:'red',d:1,fx:'block',tx:'โดนตี: ทอยลดดาเมจเท่าแต้ม'},
+  {n:'Counter',t:'R',cd:2,c:'red',d:2,fx:'none',w:1,tx:'โดนตีประชิด: สวนกลับ'},
+  {n:'Protect Ally',t:'R',cd:2,fx:'none',w:1,tx:'รับดาเมจแทนเพื่อนในระยะ 2'}],
+ Wizard:[
+  {n:'Magic Bolt',t:'A',cd:1,c:'blue',d:1,r:4,fx:'hit',x:2,tx:'ยิงเวทระยะ 4'},
+  {n:'Fire Ball',t:'A',cd:2,c:'blue',d:2,r:4,fx:'hit',w:1,tx:'ยิง 2 ลูก + ศัตรูข้างเคียง 1 ดาเมจ'},
+  {n:'Ice Bolt',t:'A',cd:2,c:'blue',d:1,r:4,fx:'hit',w:1,tx:'ยิง + เป้าหมายเดินช้าลง'},
+  {n:'Lightning',t:'A',cd:3,c:'blue',d:3,r:4,fx:'hit',tx:'ยิงเป้าหมายเดียว 3 ลูก'},
+  {n:'Meteor',t:'A',cd:3,c:'blue',d:2,r:4,fx:'area',tx:'ระเบิดรัศมี 1 รอบช่องที่เลือก'},
+  {n:'Frost Nova',t:'A',cd:3,c:'blue',d:1,r:2,fx:'adj',w:1,tx:'ตีศัตรูในระยะ 2 + แช่แข็ง'},
+  {n:'Blink',t:'A',cd:1,r:3,fx:'blink',x:2,tx:'วาร์ปไปช่องว่างในระยะ 3'},
+  {n:'Concentrate',t:'A',cd:2,fx:'draw',h:2,tx:'จั่วการ์ด 2 ใบ'},
+  {n:'Mana Shield',t:'R',cd:2,c:'blue',d:2,fx:'block',tx:'โดนตี: ทอยลดดาเมจเท่าแต้ม'},
+  {n:'Reflect',t:'R',cd:3,c:'blue',d:1,fx:'block',w:1,tx:'ลดดาเมจ (ส่วนสะท้อนยังไม่ทำ)'}]};
+const HP={Knight:20,Wizard:14};
+/* 2) มอนสเตอร์: hp + กองการ์ดของมอน  mv=เดินกี่ช่อง a=ลูกเต๋าแดงที่ตี s='self' = เสกมอนชนิดเดียวกันเพิ่ม / s='ชื่อมอน' = เรียกมอนอื่น  boss:1 = ใช้แถวร่ายสกิล (n=ชื่อการ์ด cd=เลข Cooldown ของการ์ดบอส) x=จำนวนใบ */
+const MON={
+ Slime:{hp:8,k:'S',d:[{mv:2,a:1,x:2},{mv:2,a:0},{mv:0,a:0,s:'self'}]},
+ Goblin:{hp:10,k:'G',d:[{mv:3,a:1,x:2},{mv:2,a:2},{mv:4,a:0},{mv:0,a:0,s:'self'}]},
+ 'Orc Warlord':{hp:40,k:'B',boss:1,d:[{n:'Smash',cd:2,mv:2,a:3,x:2},{n:'Roar',cd:3,mv:0,a:0,s:'Goblin'},{n:'Charge',cd:1,mv:4,a:2,x:2}]}};
+const FLOORS=[['Slime','Slime'],['Slime','Slime','Goblin'],['Goblin','Goblin','Slime'],['Goblin','Goblin','Slime','Slime'],['Orc Warlord']]; // ชั้น 5 = บอส
+/* 3) ไอเทมสุ่มดรอป k: use=ใช้ครั้งเดียว red/blue=บวกดาเมจสีนั้น arm=ลดดาเมจที่รับ boots=เดิน 3 ช่องต่อการ์ด */
+const ITEMS=[{n:'Potion',k:'use',tx:'กดใช้: ฮีล 6 HP'},{n:'Iron Sword',e:'w',k:'red',tx:'+1 ดาเมจแดง'},{n:'Magic Staff',e:'w',k:'blue',tx:'+1 ดาเมจฟ้า'},{n:'Leather Armor',e:'a',k:'arm',tx:'ลดดาเมจ 1'},{n:'Swift Boots',e:'b',k:'boots',tx:'ทิ้ง 1 ใบ = เดิน 3'}];
+
+/* =====================================================================
+   4) กริด Hex (พิกัด axial q,r รัศมี 4) — ปกติไม่ต้องแก้
+   ===================================================================== */
+const R=4,SZ=26,S3=Math.sqrt(3),HAND=4,$=i=>document.getElementById(i);
+const K=(q,r)=>q+','+r,D=(a,b)=>(Math.abs(a.q-b.q)+Math.abs(a.r-b.r)+Math.abs(a.q+a.r-b.q-b.r))/2;
+const CELLS=[];for(let q=-R;q<=R;q++)for(let r=-R;r<=R;r++)if(Math.abs(q+r)<=R)CELLS.push({q,r});
+const NB=c=>[[1,0],[-1,0],[0,1],[0,-1],[1,-1],[-1,1]].map(([a,b])=>({q:c.q+a,r:c.r+b})).filter(h=>Math.abs(h.q+h.r)<=R&&Math.abs(h.q)<=R&&Math.abs(h.r)<=R);
+const HEX=[0,1,2,3,4,5].map(i=>[SZ*Math.cos(Math.PI/3*i-Math.PI/6),SZ*Math.sin(Math.PI/3*i-Math.PI/6)].map(n=>n.toFixed(1)).join(',')).join(' ');
+const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const rnd=a=>a[Math.random()*a.length|0],same=(a,b)=>a.q==b.q&&a.r==b.r;
+const mon=c=>G.mons.find(m=>same(m.pos,c)),occ=c=>mon(c)||G.pl.find(p=>p.hp>0&&same(p.pos,c));
+function reach(from,max){const seen=new Map(),q=[[from,0]];seen.set(K(from.q,from.r),0);
+ while(q.length){const[c,d]=q.shift();if(d>=max)continue;for(const n of NB(c)){const k=K(n.q,n.r);if(seen.has(k)||occ(n))continue;seen.set(k,d+1);q.push([n,d+1])}}
+ seen.delete(K(from.q,from.r));return seen}
+
+/* =====================================================================
+   5) สถานะเกม + กติกา
+   ===================================================================== */
+let G;const cur=()=>G.pl[G.t],log=s=>{G.log.push(s)};
+/* อุปกรณ์ (eq: w=อาวุธ a=เกราะ b=รองเท้า) แยกจากช่องเก็บของ inv 3 ช่อง — โบนัสนับเฉพาะที่สวมอยู่ */
+const cnt=(p,k)=>Object.values(p.eq).filter(i=>i.k==k).length;
+/* Cooldown: แต่ละช่องในโซน (1-2-3 = เทิร์ที่เหลือ) จุได้จำกัด: ช่อง 1 จุ 3 ใบ, ช่อง 2 จุ 2 ใบ, ช่อง 3 จุ 1 ใบ
+   การ์ด CD n ลงช่อง n ตอนถูกใช้ ถ้าช่องนั้นเต็มใช้ไม่ได้ แล้วเลื่อนลงทุกเทิร์ (ตอนเลื่อนไม่ถูกจำกัด) — ฟังก์ชัน full */
+const full=(p,c)=>p.cd.filter(e=>e.left==c.cd).length>=4-c.cd;
+function init(){
+ G={fl:1,t:0,fx:[],last:null,log:['เริ่มเกม! ชั้น 1'],sel:new Set(),mv:0,tg:null,ask:null,pend:null,over:0,md:{},
+  pl:['Knight','Wizard'].map(n=>({n,hp:HP[n],max:HP[n],pos:null,hand:[],disc:[],cd:[],inv:[],eq:{},
+   deck:shuf(CARDS[n].flatMap(c=>Array(c.x||1).fill(c)))}))};
+ for(const t in MON)G.md[t]={deck:shuf(MON[t].d.flatMap(c=>Array(c.x||1).fill(c))),disc:[]};
+ G.pl.forEach(p=>draw(p,HAND));spawn();rend()}
+function spawn(){G.mons=[];G.pl.forEach((p,i)=>p.pos={q:-4,r:2+i});
+ FLOORS[G.fl-1].forEach(t=>{let c;do{c=rnd(CELLS)}while(occ(c)||G.pl.some(p=>D(p.pos,c)<4));G.mons.push({t,hp:MON[t].hp,pos:c})})}
+function draw(p,n){while(n-->0){if(!p.deck.length){p.deck=shuf(p.disc);p.disc=[]}  // กองจั่วหมด: สับกองทิ้งกลับมา
+ if(!p.deck.length)return;p.hand.push(p.deck.pop())}}
+function startTurn(){G.busy=0;G.act=null;const p=cur();log('— เทิร์น '+p.n+' —');
+ p.cd.forEach(e=>e.left--);                                   // ลด Cooldown 1 ทุกใบ
+ p.disc.push(...p.cd.filter(e=>e.left<=0).map(e=>e.c));        // ครบแล้วไปกองทิ้ง
+ p.cd=p.cd.filter(e=>e.left>0);rend()}
+function endTurn(){if(G.ask||G.over||G.busy)return;const p=cur();G.mv=0;G.sel.clear();G.tg=null;draw(p,HAND-p.hand.length);monPhase()}
+function nextTurn(){if(!G.pl.some(p=>p.hp>0)){G.over='แพ้แล้ว';return rend()}
+ do{G.t=(G.t+1)%G.pl.length}while(cur().hp<=0);startTurn()}
+/* ลูกเต๋าบนหน้าจอ: กลิ้งสั้นๆ แล้วหยุดที่แต้มจริง (แต้มสุ่มไว้แล้วใน roll แค่เอามาโชว์)
+   v=แต้มทุกลูก c=สี('red'/'blue') who=ชื่อผู้ทอย — ถ้าทอยหลายครั้งติดกัน (มอนสเตอร์) จะเข้าคิวโชว์ทีละชุด */
+const dq=[];let dBusy=0;
+function showDice(v,c,who){dq.push([v,c,who]);if(!dBusy)nextDice()}
+function nextDice(){const a=dq.shift();if(!a){dBusy=0;return}dBusy=1;const[v,c,who]=a,el=$('dice'),
+ col=c=='red'?'var(--red)':c=='blue'?'var(--blu)':'var(--mu)';let k=0;
+ const paint=(vals,done)=>{el.innerHTML='<small>'+(who||'')+' ทอย</small> '+vals.map(n=>`<span class="die${done?(n==6?' crit':''):' rolling'}" style="background:${col}">${n}</span>`).join('')
+  +(done&&v.includes(6)?' <small>Crit! ออก 6 ได้ +2 ต่อลูก</small>':'')};
+ const t=setInterval(()=>{if(++k>7){clearInterval(t);paint(v,1);setTimeout(nextDice,dq.length?700:0)}else paint(v.map(()=>1+Math.random()*6|0))},70)}
+const roll=(n,c,who)=>{const v=Array.from({length:n},()=>1+Math.random()*6|0);showDice(v,c,who);   // Crit: ลูกที่ออก 6 ได้ +2
+ return{s:v.reduce((a,b)=>a+b+(b==6?2:0),0),t:v.join(',')}};
+
+/* ---- เล่นการ์ด ---- */
+function play(i){const p=cur(),c=p.hand[i];if(!c||G.ask||G.over||G.busy)return;
+ if(G.mv){G.sel.has(i)?G.sel.delete(i):G.sel.add(i);return rend()}
+ if(full(p,c)){log('ช่อง Cooldown '+c.cd+' เต็ม ใช้ '+c.n+' ไม่ได้ รอให้การ์ดออกก่อน');return rend()}
+ if(c.t=='R'){log('Reaction ใช้ตอนถูกโจมตี');return rend()}
+ if(['hit','area','blink'].includes(c.fx)){G.tg=G.tg&&G.tg.i==i?null:{i,c};return rend()}
+ resolve(i,null)}
+function dmg(p,c){const r=roll(c.d,c.c,p.n),b=c.c=='red'?cnt(p,'red'):c.c=='blue'?cnt(p,'blue'):0;
+ log(p.n+' ใช้ '+c.n+' ['+r.t+']'+(b?' +'+b:'')+(c.w?' ⚠ผลพิเศษยังไม่ทำงาน':''));return r.s+b}
+function resolve(i,tg){const p=cur(),c=p.hand.splice(i,1)[0];G.tg=null;G.last={who:p.n,n:c.n,sub:c.t=='A'?'Action':'Reaction',tx:c.tx,col:c.c};
+ p.cd.push({c,left:c.cd});                                    // ใช้แล้วเข้าโซน Cooldown (แบบ A)
+ if(c.fx=='hit'){hurt(mon(tg),dmg(p,c),p)}
+ else if(c.fx=='adj'){const d=dmg(p,c);G.mons.filter(m=>D(m.pos,p.pos)<=c.r).forEach(m=>hurt(m,d,p))}
+ else if(c.fx=='area'){const d=dmg(p,c);G.mons.filter(m=>D(m.pos,tg)<=1).forEach(m=>hurt(m,d,p))}
+ else if(c.fx=='heal'){p.hp=Math.min(p.max,p.hp+c.h);log(p.n+' ฮีล '+c.h)}
+ else if(c.fx=='draw')draw(p,c.h);
+ else if(c.fx=='blink'){p.pos=tg;log(p.n+' วาร์ป')}
+ else log(p.n+' ใช้ '+c.n+' ⚠ยังไม่ทำงาน');
+ rend()}
+function hurt(m,d,p){fx(m.pos,d,G.last&&G.last.col=='blue'?'#3b78dd':'#d6453d');m.hp-=d;log(' → '+m.t+' -'+d+' (เหลือ '+Math.max(0,m.hp)+')');
+ if(m.hp>0)return;G.mons=G.mons.filter(x=>x!=m);log(' '+m.t+' ตาย');
+ if(Math.random()<.5){const it=rnd(ITEMS);log(' ดรอป '+it.n);if(it.e&&!p.eq[it.e]){p.eq[it.e]=it;log(' สวมใส่ '+it.n)}else if(p.inv.length<3)p.inv.push(it);else G.pend={p,it}} // ช่องเต็ม -> ต้องเลือกทิ้ง
+ if(!G.mons.length){if(G.fl==5){G.over='ชนะ! ล้มบอสแล้ว'}else{G.fl++;spawn();log('=== ลงชั้น '+G.fl+' ===')}}}
+
+/* ---- มอนสเตอร์: จบเทิร์นผู้เล่น แต่ละชนิดจั่ว 1 ใบ แล้วทุกตัวชนิดนั้นทำตาม ---- */
+function monPhase(){G.busy=1;const acts=[];   // busy = ระหว่างมอนทำงาน ผู้เล่นกดอะไรไม่ได้
+ [...new Set(G.mons.map(m=>m.t))].forEach(t=>{const md=G.md[t];if(!md.deck.length){md.deck=shuf(md.disc);md.disc=[]}
+  const c=md.deck.pop();md.disc.push(c);
+  /* บอส: ลด Cooldown ทุกใบในแถว -> ถึง 0 ทำแอ็กชัน -> แล้วจั่วใบใหม่ลงแถว (ไม่จำกัดจำนวนใบ) */
+  if(MON[t].boss){G.mons.filter(m=>m.t==t).forEach(m=>{m.tr=m.tr||[];m.tr.forEach(e=>e.left--);m.tr.filter(e=>e.left<=0).forEach(e=>{log(t+' ร่าย '+e.c.n);G.last={who:t,n:e.c.n,im:t,sub:'ร่ายสกิล',tx:'เดิน '+e.c.mv+(e.c.a?' ตีแดง '+e.c.a:'')};acts.push([m,e.c])});m.tr=m.tr.filter(e=>e.left>0);m.tr.push({c,left:c.cd});log(t+' จั่ว '+c.n+' (CD '+c.cd+')')});return}
+  G.last={who:t,n:t,im:t,sub:'มอนจั่ว',tx:'เดิน '+c.mv+(c.a?' ตีแดง '+c.a:'')+(c.s?' เสกมอน':'')};log(t+' จั่ว: เดิน '+c.mv+(c.a?' ตีแดง '+c.a:'')+(c.s?' เรียกลูกน้อง':''));
+  G.mons.filter(m=>m.t==t).forEach(m=>acts.push([m,c]))});
+ (function run(){const a=acts.shift();if(!a)return nextTurn();const[m,c]=a;if(!G.mons.includes(m))return run();
+  const live=G.pl.filter(p=>p.hp>0);if(!live.length)return nextTurn();
+  const tg=live.sort((x,y)=>D(m.pos,x.pos)-D(m.pos,y.pos))[0];   // เป้าหมาย = ผู้เล่นที่ใกล้สุด
+  if(c.s){const st=c.s=='self'?m.t:c.s,f=NB(m.pos).find(h=>!occ(h));   // เสกมอน (เพดาน 6 ตัวบนแผนที่)
+   if(f&&G.mons.length<6){const n={t:st,hp:MON[st].hp,pos:f};G.mons.push(n);if(c.s=='self')acts.push([n,{...c,s:0}])}}   // ตัวที่เสกใหม่ทำแอ็กชันตามการ์ดด้วย
+  let i=0;G.act=m;rend();   // ไฮไลต์มอนที่กำลังทำงาน
+  /* จังหวะมอน: เดินทีละช่องช้าๆ แล้วค่อยตี (ปรับความเร็วที่ตัวเลข ms: 280=ต่อช่อง, 450=ก่อนเริ่ม, 800=หลังตี) */
+  const step=()=>{if(i<c.mv&&D(m.pos,tg.pos)>1){const f=NB(m.pos).filter(h=>!occ(h)).sort((x,y)=>D(x,tg.pos)-D(y,tg.pos))[0];i++;if(f){m.pos=f;rend();return setTimeout(step,280)}}
+   if(c.a&&D(m.pos,tg.pos)==1)hitPlayer(m,tg,c.a,()=>setTimeout(run,800));else setTimeout(run,c.mv||c.s?450:120)};
+  setTimeout(step,450)})()}
+function hitPlayer(m,p,n,done){const r=roll(n,'red',m.t),rs=p.hand.filter(c=>c.fx=='block'&&!full(p,c));
+ const fin=d=>{d=Math.max(0,d-cnt(p,'arm'));p.hp-=d;fx(p.pos,d,'#d6453d');log(m.t+' ตี '+p.n+' ['+r.t+'] -'+d+(p.hp<=0?' → '+p.n+' ล้ม!':''));G.ask=null;done()};
+ if(rs.length){G.ask={p,d:r.s,rs,fin};log(m.t+' กำลังโจมตี '+p.n+' ('+r.s+') เลือก Reaction ได้');rend()}else fin(r.s)}
+function react(c){const a=G.ask,p=a.p,x=roll(c.d,c.c,p.n);p.hand.splice(p.hand.indexOf(c),1);p.cd.push({c,left:c.cd});
+ log(p.n+' ใช้ '+c.n+' ['+x.t+'] ลด '+x.s);a.fin(Math.max(0,a.d-x.s))}
+
+/* =====================================================================
+   6) แสดงผล
+   ===================================================================== */
+function hlset(){const s=new Set,p=cur();if(!p||G.ask||G.over||G.busy)return s;
+ if(G.mv)reach(p.pos,G.sel.size*(cnt(p,'boots')?3:2)).forEach((d,k)=>s.add(k));
+ else if(G.tg){const c=G.tg.c;CELLS.forEach(h=>{const d=D(p.pos,h);if(d>c.r||d<1)return;
+  if(c.fx=='hit'&&!mon(h)||c.fx=='blink'&&occ(h))return;s.add(K(h.q,h.r))})}
+ return s}
+const dc=c=>c.c?`<span class="${c.c=='red'?'r':'b'}">${c.d}d ${c.c=='red'?'แดง':'ฟ้า'}</span>`:'';
+function rend0(){const p=cur(),hl=hlset();
+ $('hd').innerHTML=`<b>ชั้น ${G.fl}/5 · เทิร์น ${p.n}</b><span><button class="${G.mv?'on':''}" data-a="mv">${G.mv?'เลือกการ์ดที่จะทิ้ง แล้วคลิกช่อง':'เดิน (ทิ้งการ์ด)'}</button> <button data-a="end">จบเทิร์น</button> <button data-a="new">เริ่มใหม่</button></span>`;
+ $('map').innerHTML=CELLS.map(c=>{const k=K(c.q,c.r),pl=G.pl.find(x=>x.hp>0&&same(x.pos,c)),m=mon(c),
+  pc=pl?`<circle r="17" fill="${pl.n=='Knight'?'#d6453d':'#3b78dd'}" stroke="${pl==p?'#f2c94c':'#fff'}" stroke-width="3"/><text y="-2" fill="#fff" text-anchor="middle" font-size="12" font-weight="700">${pl.n[0]}</text><text y="10" fill="#fff" text-anchor="middle" font-size="9">${pl.hp}</text>`
+  :m?`<circle r="15" fill="#444" stroke="#999"/><text y="-1" fill="#fff" text-anchor="middle" font-size="12" font-weight="700">${MON[m.t].k}</text><text y="10" fill="#fff" text-anchor="middle" font-size="9">${m.hp}</text>`:'';
+  return`<g data-k="${k}" transform="translate(${(S3*SZ*(c.q+c.r/2)).toFixed(1)},${(1.5*SZ*c.r).toFixed(1)})"><polygon points="${HEX}" class="hx${hl.has(k)?' hl':''}"/>${pc}</g>`}).join('');
+ $('sd').innerHTML=(G.over?`<div class="box"><b>${G.over}</b></div>`:'')
+  +(G.ask?`<div class="box me"><b>${G.ask.p.n} ถูกโจมตี ${G.ask.d} แต้ม</b><br>${G.ask.rs.map((c,i)=>`<button data-a="rx" data-i="${i}">${c.n}</button>`).join(' ')} <button data-a="rx" data-i="-1">ไม่ใช้</button></div>`:'')
+  +(G.pend?`<div class="box me">ช่องเก็บของเต็ม! ได้ <b>${G.pend.it.n}</b> — คลิกไอเทมที่จะทิ้ง หรือ <button data-a="skip">ทิ้งของใหม่</button></div>`:'')
+  +G.pl.map(q=>`<div class="box ${q==p?'me':''}"><b>${q.n}</b> HP ${Math.max(0,q.hp)}/${q.max} · กองจั่ว ${q.deck.length} · กองทิ้ง ${q.disc.length}<br>
+  <small>Cooldown: ${q.cd.map(e=>e.c.n+'('+e.left+')').join(', ')||'ว่าง'}</small><br><small>อุปกรณ์ (อาวุธ/เกราะ/รองเท้า): ${['w','a','b'].map(k=>q.eq[k]?q.eq[k].n:'-').join(' / ')}</small><br>
+  ${[0,1,2].map(i=>{const it=q.inv[i];return`<button data-a="inv" data-p="${G.pl.indexOf(q)}" data-i="${i}" title="${it?it.tx:''}">${it?it.n:'ว่าง'}</button>`}).join(' ')}</div>`).join('')
+  +G.mons.filter(m=>MON[m.t].boss).map(b=>`<div class="box"><b>${b.t}</b> HP ${b.hp} · แถวร่ายสกิล<br>${[1,2,3].map(n=>`<small>${n}: ${(b.tr||[]).filter(e=>e.left==n).map(e=>e.c.n).join(', ')||'ว่าง'}</small>`).join('<br>')}</div>`).join('');
+ $('hand').innerHTML=p.hand.map((c,i)=>`<button class="box cd ${G.sel.has(i)||G.tg&&G.tg.i==i?'sel':''}" data-a="card" data-i="${i}"><b>${c.n}</b><small>${c.t=='A'?'Action':'Reaction'} · CD ${c.cd}</small>${dc(c)}<span>${c.tx}</span>${c.w?'<small class="w">⚠ ผลพิเศษยังไม่ทำงาน</small>':''}</button>`).join('')||'<small>มือว่าง</small>';
+ const l=$('lg');l.textContent=G.log.slice(-12).join('\n');l.scrollTop=l.scrollHeight}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]'),g=e.target.closest('#map g');if(!G)return;
+ if(g&&!G.ask&&!G.over&&hlset().has(g.dataset.k)){const[q,r]=g.dataset.k.split(',').map(Number),p=cur();
+  if(G.mv){p.pos={q,r};[...G.sel].sort((a,b)=>b-a).forEach(i=>p.disc.push(p.hand.splice(i,1)[0]));log(p.n+' เดิน');G.sel.clear();G.mv=0;rend()}
+  else if(G.tg)resolve(G.tg.i,{q,r});return}
+ if(!b)return;const a=b.dataset.a,i=+b.dataset.i;
+ if(a=='card')play(i);else if(a=='end')endTurn();else if(a=='new')init();
+ else if(a=='mv'){if(!G.ask){G.mv=!G.mv;G.sel.clear();G.tg=null;rend()}}
+ else if(a=='rx'){if(i<0)G.ask.fin(G.ask.d);else react(G.ask.rs[i])}
+ else if(a=='skip'){G.pend=null;rend()}
+ else if(a=='inv'){const q=G.pl[+b.dataset.p],it=q.inv[i];
+  if(G.pend&&q==G.pend.p){q.inv[i]=G.pend.it;G.pend=null}               // ช่องเต็ม: แทนที่ของเก่า
+  else if(it&&it.k=='use'&&q==cur()){q.hp=Math.min(q.max,q.hp+6);q.inv.splice(i,1);log(q.n+' ใช้ Potion +6')}
+  else if(it&&it.e&&q==cur()){const o=q.eq[it.e];q.eq[it.e]=it;if(o)q.inv[i]=o;else q.inv.splice(i,1);log(q.n+' สวม '+it.n)}   // คลิกอุปกรณ์ในช่องเก็บของ = สวม/สลับ
+  rend()}});
+/* =====================================================================
+   7) รูปภาพ + เลย์เอาต์ใหม่ (ต่อจากการแสดงผลเดิม rend0)
+   รูปเก็บในเบราว์เซอร์เครื่องนี้ (IMG: ชื่อ -> dataURL) ปุ่ม "รูปภาพ" ด้านบนเพื่ออัปโหลด
+   ชื่อที่ใช้เป็นกุญแจ: ชื่ออาชีพ / ชื่อมอน / ชื่อการ์ด / ชื่อไอเทม
+   ===================================================================== */
+let IMG={};try{IMG=JSON.parse(localStorage.getItem('dc_img')||'{}')}catch(e){}
+const saveImg=()=>{try{localStorage.setItem('dc_img',JSON.stringify(IMG))}catch(e){}};
+const pix=q=>[S3*SZ*(q.q+q.r/2),1.5*SZ*q.r];
+function fx(pos,a,c){G.fx.push({q:pos.q,r:pos.r,t:Date.now(),a,c})}   // วงดาเมจ: สีตามสีลูกเต๋าของการ์ด
+function overlay(){let s='<defs><clipPath id="cl"><circle r="16"/></clipPath></defs>'+(G.act&&G.mons.includes(G.act)?`<g class="ov" transform="translate(${pix(G.act.pos).map(n=>n.toFixed(1))})"><circle r="21" fill="none" stroke="#f2c94c" stroke-width="3"/></g>`:'');
+ const tok=(pos,nm,hp)=>{if(!IMG[nm])return'';const[x,y]=pix(pos);return`<g class="ov" transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><image href="${IMG[nm]}" x="-16" y="-16" width="32" height="32" clip-path="url(#cl)" preserveAspectRatio="xMidYMid slice"/><text y="27" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" stroke="#000" stroke-width="2.5" paint-order="stroke">${hp}</text></g>`};
+ G.pl.filter(q=>q.hp>0).forEach(q=>s+=tok(q.pos,q.n,q.hp));G.mons.forEach(q=>s+=tok(q.pos,q.t,q.hp));
+ const now=Date.now();G.fx=G.fx.filter(f=>now-f.t<1300);
+ G.fx.forEach(f=>{const[x,y]=pix(f);s+=`<g class="ov" transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><g class="fx"><polygon points="0,-30 8,-11 28,-15 13,0 28,15 8,11 0,30 -8,11 -28,15 -13,0 -28,-15 -8,-11" fill="${f.c}" opacity=".9"/><text y="8" text-anchor="middle" font-size="22" font-weight="800" fill="#fff" stroke="#000" stroke-width="3" paint-order="stroke">${f.a}</text></g></g>`});
+ $('map').insertAdjacentHTML('beforeend',s);
+ if(G.fx.length&&!G.ft)G.ft=setTimeout(()=>{G.ft=0;rend()},1350)}
+function panels(){const p=cur(),av=(n,l)=>IMG[n]?`<img class="av" src="${IMG[n]}">`:`<div class="av">${l}</div>`;
+ const tier=(list,k)=>`<div class="tier">${[1,2,3].map(n=>`<div><small>${n}</small><br>${list.filter(e=>e.left==n).map(e=>e.c.n).join(', ')}</div>`).join('')}</div>`;
+ $('hd').insertAdjacentHTML('beforeend','<button data-a="img">รูปภาพ</button>');
+ $('bn').innerHTML=(G.over?`<div class="bnr"><b>${G.over}</b> <button data-a="new">เริ่มใหม่</button></div>`:'')
+  +(G.ask?`<div class="bnr"><b>${G.ask.p.n} ถูกโจมตี ${G.ask.d} แต้ม</b> ${G.ask.rs.map((c,i)=>`<button data-a="rx" data-i="${i}">${c.n}</button>`).join(' ')} <button data-a="rx" data-i="-1">ไม่ใช้</button></div>`:'')
+  +(G.pend?`<div class="bnr">ช่องเก็บของเต็ม! ได้ <b>${G.pend.it.n}</b> คลิกไอเทมในช่องเก็บของที่จะทิ้ง หรือ <button data-a="skip">ทิ้งของใหม่</button></div>`:'');
+ const L=G.last;$('last').innerHTML=L?`<small>การ์ดล่าสุดที่ใช้</small><div style="display:flex;gap:8px;margin-top:4px">${IMG[L.im||L.n]?`<img class="art" style="width:84px;height:84px" src="${IMG[L.im||L.n]}">`:''}<div><b>${L.n}</b> <small>${L.who} · ${L.sub}</small><br>${L.tx||''}</div></div>`:'<small>การ์ดล่าสุดที่ใช้ (ผู้เล่นหรือมอน) จะแสดงตรงนี้</small>';
+ /* แผงผู้เล่น: รูป HP อุปกรณ์ ช่องเก็บของ และ Cooldown แบ่งชั้น 1-2-3 */
+ $('pp').innerHTML=`<div style="display:flex;gap:8px;align-items:center">${av(p.n,p.n[0])}<div style="flex:1"><b>${p.n}</b> HP ${Math.max(0,p.hp)}/${p.max}<div style="height:7px;background:var(--ln);border-radius:4px"><div style="width:${Math.max(0,p.hp/p.max*100)}%;height:7px;background:var(--red);border-radius:4px"></div></div><small>กองจั่ว ${p.deck.length} · กองทิ้ง ${p.disc.length}${p.disc.length?' (บนสุด: '+p.disc[p.disc.length-1].n+')':''}</small></div></div>
+ <small>อุปกรณ์</small><div>${['w','a','b'].map(k=>`<span class="sl">${p.eq[k]?p.eq[k].n:{w:'อาวุธ',a:'เกราะ',b:'รองเท้า'}[k]}</span>`).join('')}</div>
+ <small>ช่องเก็บของ (คลิกอุปกรณ์เพื่อสวม / ยาเพื่อใช้)</small><div>${[0,1,2].map(i=>{const it=p.inv[i];return`<button class="sl" data-a="inv" data-p="${G.pl.indexOf(p)}" data-i="${i}" title="${it?it.tx:''}">${it?it.n:'ว่าง'}</button>`}).join('')}</div>
+ <small>Cooldown ${[1,2,3].map(n=>'ช่อง '+n+' '+p.cd.filter(e=>e.left==n).length+'/'+(4-n)).join(' · ')}</small>${tier(p.cd)}
+ <small>${G.pl.filter(q=>q!=p).map(q=>q.n+' HP '+Math.max(0,q.hp)).join(' · ')}</small>`;
+ /* แผงมอน/บอส: ชนิดมอนบนแผนที่ + แถวร่ายสกิลของบอส */
+ $('bp').innerHTML='<b>มอนบนแผนที่</b>'+[...new Set(G.mons.map(m=>m.t))].map(t=>`<div style="display:flex;gap:6px;align-items:center;margin:4px 0">${av(t,MON[t].k)}<span>${t} ×${G.mons.filter(m=>m.t==t).length}<br><small>HP ${G.mons.filter(m=>m.t==t).map(m=>m.hp).join(', ')} · กองทิ้ง ${G.md[t].disc.length}</small></span></div>`).join('')
+  +G.mons.filter(m=>MON[m.t].boss).map(b=>`<small>แถวร่ายสกิลบอส (ถึง 0 = ทำงาน)</small>${tier(b.tr||[])}`).join('');
+ $('hand').querySelectorAll('button').forEach((b,i)=>{const c=p.hand[i];if(c&&IMG[c.n])b.insertAdjacentHTML('afterbegin',`<img class="art" src="${IMG[c.n]}">`)});
+ /* หน้าอัปโหลดรูป */
+ const im=$('im'),o=im.firstElementChild,st=o?o.scrollTop:0;im.style.display=G.im?'grid':'none';
+ if(G.im){const g={'อาชีพ':Object.keys(CARDS),'มอน':Object.keys(MON),'ไอเทม':ITEMS.map(i=>i.n),'การ์ด':[...new Set(Object.values(CARDS).flat().map(c=>c.n))]};
+  im.innerHTML='<div><b>รูปภาพ</b> <button data-a="img">ปิด</button><p><small>รูปเก็บในเบราว์เซอร์เครื่องนี้เท่านั้น ย่อเหลือ 128px อัตโนมัติ</small></p>'+Object.entries(g).map(([k,v])=>`<h4>${k}</h4>`+v.map(n=>`<div style="display:flex;gap:8px;align-items:center;margin:4px 0">${av(n,'')}<span style="flex:1">${n}</span><input type="file" accept="image/*" data-img="${n}" style="max-width:150px">${IMG[n]?`<button data-a="imclr" data-n="${n}">ลบ</button>`:''}</div>`).join('')).join('')+'</div>';
+  if(st)im.firstElementChild.scrollTop=st}}
+function rend(){rend0();panels();overlay()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||!G)return;
+ if(b.dataset.a=='img'){G.im=!G.im;rend()}else if(b.dataset.a=='imclr'){delete IMG[b.dataset.n];saveImg();rend()}});
+document.addEventListener('change',e=>{const f=e.target.files&&e.target.files[0],n=e.target.dataset&&e.target.dataset.img;if(!f||!n)return;
+ const im=new Image(),u=URL.createObjectURL(f);
+ im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=128;const s=Math.min(im.width,im.height);
+  c.getContext('2d').drawImage(im,(im.width-s)/2,(im.height-s)/2,s,s,0,0,128,128);IMG[n]=c.toDataURL('image/jpeg',.8);URL.revokeObjectURL(u);saveImg();rend()};im.src=u});
+init();
+</script></body></html>
